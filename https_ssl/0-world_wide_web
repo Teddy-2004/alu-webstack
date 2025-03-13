@@ -2,13 +2,31 @@
 # script to config domain zone to point to load balancer
 # add more subdomains and display info about them
 
-domain=$1
-if [ "$#" -eq 2 ]; then
-   sub=$2
-else
-	sub=("www" "lb-01" "web-01" "web-02")
+display_info() {
+    local subdomain=$1
+    local domain=$2
+    
+    result=$(dig +short "$subdomain.$domain")
+    
+    if [[ -n "$result" ]]; then
+        echo "The subdomain $subdomain is a A record and points to $result"
+    else
+        echo "No record found for $subdomain.$domain"
+    fi
+}
+
+if [[ -z "$1" ]]; then
+    echo "Usage: $0 <domain> [subdomain]"
+    exit 1
 fi
-for subdomain in "${sub[@]}"; do
-    echo -n "The subdomain $subdomain"
-    dig "$subdomain.$domain" | grep -A1 'ANSWER SECTION:' | tail -n -1 | awk '{ print " is a " $4 " record and points to " $5}'
-done
+
+domain=$1
+subdomain=$2
+
+if [[ -n "$subdomain" ]]; then
+    display_info "$subdomain" "$domain"
+else
+    for sub in www lb-01 web-01 web-02; do
+        display_info "$sub" "$domain"
+    done
+fi
